@@ -1,0 +1,5 @@
+entorno_virtual/
+*.sqlite3
+.env
+__pycache__/
+node_modules/
