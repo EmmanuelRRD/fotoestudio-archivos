@@ -116,11 +116,11 @@ class LoginView(TokenObtainPairView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
 
-        if not result.get('success'):
-            return Response(
-                {"detail": "Verificación de Captcha inválida o vencida. Inténtalo de nuevo."}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        #if not result.get('success'):
+        #    return Response(
+        #        {"detail": "Verificación de Captcha inválida o vencida. Inténtalo de nuevo."}, 
+        #        status=status.HTTP_400_BAD_REQUEST
+        #    )
 
         return super().post(request, *args, **kwargs)
 
