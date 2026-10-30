@@ -14,7 +14,7 @@ pipeline {
                     sh '''
                         docker build -t fotoestudio-backend:latest ./fotoestudio
                         minikube image load fotoestudio-backend:latest
-                        docker build -t fotoestudio-frontend:latest ./frontend
+                        docker build -t fotoestudio-frontend:latest ./frontend-fotoestudio
                         minikube image load fotoestudio-frontend:latest
                     '''
                 }
