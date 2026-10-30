@@ -4,20 +4,17 @@ pipeline {
     stages {
         stage('1. Verificar Código') {
             steps {
-                // Obtiene la última versión de tu repositorio de GitHub
-                // (Si usas un Webhook, Jenkins clonará automáticamente los cambios)
                 checkout scm
             }
         }
 
-        stage('2. Construir Imagen en Minikube') {
+        stage('2. Construir Imagen Backend en Minikube') {
             steps {
                 script {
-                    // Este comando apunta temporalmente el entorno de Docker al daemon interno de Minikube.
-                    // Así, la imagen se crea "dentro" de Minikube sin subirla a Docker Hub.
+                    // Apunta al demonio de Docker de Minikube y construye usando la carpeta ./fotoestudio
                     sh '''
                         eval $(minikube docker-env)
-                        docker build -t fotoestudio-app:latest .
+                        docker build -t fotoestudio-backend:latest ./fotoestudio
                     '''
                 }
             }
@@ -27,14 +24,10 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        // Asegura el contexto y aplica o reinicia tus manifiestos de Kubernetes
                         minikube update-context
                         
-                        // Si ya tienes un deployment creado, esto fuerza a que tome la nueva imagen:
-                        kubectl rollout restart deployment/fotoestudio-deployment
-                        
-                        // O si prefieres aplicar directamente tus YAMLs:
-                        // kubectl apply -f k8s/
+                        // Aplica todos los manifiestos de Kubernetes que están en tu carpeta k8s/
+                        kubectl apply -f k8s/
                     '''
                 }
             }
@@ -43,10 +36,10 @@ pipeline {
 
     post {
         success {
-            echo '¡Pipeline ejecutado con éxito y desplegado en Minikube!'
+            echo '¡El backend de fotoestudio se ha desplegado con éxito en Minikube!'
         }
         failure {
-            echo 'Hubo un error en el pipeline. Revisa los logs.'
+            echo 'Hubo un error en el pipeline. Revisa la consola.'
         }
     }
 }
