@@ -21,7 +21,23 @@ pipeline {
             }
         }
 
-        stage('3. Desplegar en Kubernetes') {
+        stage('3. Análisis con SonarQube') {
+            steps {
+                script {
+                    dir('fotoestudio') {
+                        sh '''
+                            sonar-scanner \
+                              -Dsonar.projectKey=fotoestudio-backend \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=http://localhost:9000 \
+                              -Dsonar.login=TU_TOKEN_O_CREDENCIAL
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('4. Desplegar en Kubernetes') {
             steps {
                 script {
                     sh '''
