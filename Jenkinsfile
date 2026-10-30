@@ -36,7 +36,7 @@ pipeline {
                                       -Dsonar.projectKey=fotoestudio-backend \
                                       -Dsonar.sources=. \
                                       -Dsonar.host.url=http://172.17.0.1:9000 \
-                                      -Dsonar.login=${SONAR_TOKEN}
+                                      -Dsonar.login=${sonarqubes_jenkins}
                                 '''
                             }
                         }
