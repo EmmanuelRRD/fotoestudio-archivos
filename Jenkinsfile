@@ -21,27 +21,44 @@ pipeline {
             }
         }
 
+
 stage('3. Análisis con SonarQube') {
-            steps {
-                script {
-                    dir('fotoestudio') {
-                        withSonarQubeEnv('SonarqubeLocal') { 
-                            withCredentials([string(credentialsId: 'sonarqubes_jenkins', variable: 'SONAR_TOKEN')]) {
-                                sh '''
-                                    docker run --rm \
-                                      -v "$(pwd)":/usr/src \
-                                      -e SONAR_HOST_URL="http://172.17.0.1:9000" \
-                                      -e SONAR_TOKEN="${SONAR_TOKEN}" \
-                                      sonarsource/sonar-scanner-cli \
-                                      -Dsonar.projectKey=fotoestudio-backend \
-                                      -Dsonar.sources=.
-                                '''
-                            }
-                        }
+    steps {
+        script {
+            dir('fotoestudio') {
+                withSonarQubeEnv('SonarqubeLocal') {
+                    withCredentials([
+                        string(
+                            credentialsId: 'sonarqubes_jenkins',
+                            variable: 'SONAR_TOKEN'
+                        )
+                    ]) {
+                        sh '''
+                            set -eu
+
+                            rm -f report-task.txt
+
+                            docker run --rm \
+                              -v "$(pwd)":/usr/src \
+                              -w /usr/src \
+                              -e SONAR_HOST_URL="http://172.17.0.1:9000" \
+                              -e SONAR_TOKEN="${SONAR_TOKEN}" \
+                              sonarsource/sonar-scanner-cli \
+                              -Dsonar.projectKey=fotoestudio-backend \
+                              -Dsonar.sources=. \
+                              -Dsonar.scanner.metadataFilePath=/usr/src/report-task.txt
+
+                            echo "Verificando el reporte de SonarQube..."
+                            test -s report-task.txt
+                            cat report-task.txt
+                        '''
                     }
                 }
             }
         }
+    }
+}
+
 
         stage('4. Quality Gate de SonarQube') {
             steps {
