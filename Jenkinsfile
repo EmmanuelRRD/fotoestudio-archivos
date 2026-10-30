@@ -22,20 +22,22 @@ pipeline {
         }
 
         stage('3. Análisis con SonarQube') {
-            steps {
-                script {
-                    dir('fotoestudio') {
-                        sh '''
-                            sonar-scanner \
-                            -Dsonar.projectKey=fotoestudio-backend \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=http://localhost:9000 \
-                            -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
-                        '''
-                    }
-                }
+    steps {
+        script {
+            dir('fotoestudio') {
+                sh '''
+                    docker run --rm \
+                      -v "$(pwd)":/usr/src \
+                      sonarsource/sonar-scanner-cli \
+                      -Dsonar.projectKey=fotoestudio-backend \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=http://172.17.0.1:9000 \
+                      -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
+                '''
             }
         }
+    }
+}
 
         stage('4. Desplegar en Kubernetes') {
             steps {
