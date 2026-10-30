@@ -8,13 +8,15 @@ pipeline {
             }
         }
 
-        stage('2. Construir Imagen Backend en Minikube') {
+        stage('2. Construir e Cargar en Minikube') {
             steps {
                 script {
-                    // Apunta al demonio de Docker de Minikube y construye usando la carpeta ./fotoestudio
                     sh '''
-                        eval $(minikube docker-env)
+                        // Construye la imagen normalmente en el Docker local
                         docker build -t fotoestudio-backend:latest ./fotoestudio
+                
+                        // Carga esa imagen directamente al clúster de Minikube
+                        minikube image load fotoestudio-backend:latest
                     '''
                 }
             }
