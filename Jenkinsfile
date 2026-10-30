@@ -83,7 +83,18 @@ pipeline {
 
     post {
         success {
-            echo '¡El proyecto fotoestudio se ha analizado, desplegado y fusionado con éxito!'
+            script {
+                sh '''
+                    git config user.name "Jenkins CI"
+                    git config user.email "jenkins@local.domain"
+                    
+                    git checkout main
+                    git pull origin main
+                    git merge ${env.BRANCH_NAME} --no-ff -m "Merge automático exitoso desde ${env.BRANCH_NAME} [Jenkins]"
+                    git push origin main
+                '''
+            }
+            echo '¡El proyecto fotoestudio se ha analizado, desplegado y fusionado con éxito en main!'
         }
         failure {
             echo 'Hubo un error en el pipeline. Revisa la consola.'
