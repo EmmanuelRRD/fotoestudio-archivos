@@ -25,15 +25,18 @@ pipeline {
             steps {
                 script {
                     dir('fotoestudio') {
-                        sh '''
-                            docker run --rm \
-                              -v "$(pwd)":/usr/src \
-                              sonarsource/sonar-scanner-cli \
-                              -Dsonar.projectKey=fotoestudio-backend \
-                              -Dsonar.sources=. \
-                              -Dsonar.host.url=http://172.17.0.1:9000 \
-                              -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
-                        '''
+                        // Aquí ocultamos el token de forma segura usando las credenciales de Jenkins
+                        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'TOKEN')]) {
+                            sh '''
+                                docker run --rm \
+                                  -v "$(pwd)":/usr/src \
+                                  sonarsource/sonar-scanner-cli \
+                                  -Dsonar.projectKey=fotoestudio-backend \
+                                  -Dsonar.sources=. \
+                                  -Dsonar.host.url=http://172.17.0.1:9000 \
+                                  -Dsonar.token=${TOKEN}
+                            '''
+                        }
                     }
                 }
             }
@@ -42,7 +45,6 @@ pipeline {
         stage('4. Quality Gate de SonarQube') {
             steps {
                 script {
-                    // Pausa hasta que SonarQube evalúe los resultados
                     timeout(time: 5, unit: 'MINUTES') {
                         def qg = waitForQualityGate()
                         if (qg.status != 'OK') {
@@ -83,17 +85,6 @@ pipeline {
 
     post {
         success {
-            script {
-                sh '''
-                    git config user.name "Jenkins CI"
-                    git config user.email "jenkins@local.domain"
-                    
-                    git checkout main
-                    git pull origin main
-                    git merge ${env.BRANCH_NAME} --no-ff -m "Merge automático exitoso desde ${env.BRANCH_NAME} [Jenkins]"
-                    git push origin main
-                '''
-            }
             echo '¡El proyecto fotoestudio se ha analizado, desplegado y fusionado con éxito en main!'
         }
         failure {
