@@ -26,13 +26,16 @@ pipeline {
                 script {
                     dir('fotoestudio') {
                         withSonarQubeEnv('SonarqubeLocal') { 
-                            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                                // comando nativo 
+                            withCredentials([string(credentialsId: 'sonarqubes_jenkins', variable: 'SONAR_TOKEN')]) {
                                 sh '''
-                                    sonar-scanner \
+                                    docker run --rm \
+                                      -v "$(pwd)":/usr/src \
+                                      -e SONAR_HOST_URL="http://172.17.0.1:9000" \
+                                      -e SONAR_TOKEN="${SONAR_TOKEN}" \
+                                      sonarsource/sonar-scanner-cli \
                                       -Dsonar.projectKey=fotoestudio-backend \
                                       -Dsonar.sources=. \
-                                      -Dsonar.login=${SONAR_TOKEN}
+                                      -Dsonar.scanner.skipReportFile=false
                                 '''
                             }
                         }
