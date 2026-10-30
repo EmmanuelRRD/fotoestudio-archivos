@@ -28,7 +28,7 @@ pipeline {
                         // 1. Cargamos el entorno del servidor configurado en Jenkins
                         withSonarQubeEnv('SonarqubeLocal') { 
                             // 2. Inyectamos el token de forma segura desde las credenciales ocultas de Jenkins
-                            withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                                 sh '''
                                     docker run --rm \
                                       -v "$(pwd)":/usr/src \
@@ -36,7 +36,7 @@ pipeline {
                                       -Dsonar.projectKey=fotoestudio-backend \
                                       -Dsonar.sources=. \
                                       -Dsonar.host.url=http://172.17.0.1:9000 \
-                                      -Dsonar.login=${sonarqubes_jenkins}
+                                      -Dsonar.login=${SONAR_TOKEN}
                                 '''
                             }
                         }
