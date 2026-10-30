@@ -22,24 +22,38 @@ pipeline {
         }
 
         stage('3. Análisis con SonarQube') {
-    steps {
-        script {
-            dir('fotoestudio') {
-                sh '''
-                    docker run --rm \
-                      -v "$(pwd)":/usr/src \
-                      sonarsource/sonar-scanner-cli \
-                      -Dsonar.projectKey=fotoestudio-backend \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=http://172.17.0.1:9000 \
-                      -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
-                '''
+            steps {
+                script {
+                    dir('fotoestudio') {
+                        sh '''
+                            docker run --rm \
+                              -v "$(pwd)":/usr/src \
+                              sonarsource/sonar-scanner-cli \
+                              -Dsonar.projectKey=fotoestudio-backend \
+                              -Dsonar.sources=. \
+                              -Dsonar.host.url=http://172.17.0.1:9000 \
+                              -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
+                        '''
+                    }
+                }
             }
         }
-    }
-}
 
-        stage('4. Desplegar en Kubernetes') {
+        stage('4. Quality Gate de SonarQube') {
+            steps {
+                script {
+                    // Pausa hasta que SonarQube evalúe los resultados
+                    timeout(time: 5, unit: 'MINUTES') {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "El pipeline falló porque el Quality Gate de SonarQube no fue superado: ${qg.status}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('5. Desplegar en Kubernetes') {
             steps {
                 script {
                     sh '''
@@ -49,11 +63,27 @@ pipeline {
                 }
             }
         }
+
+        stage('6. Merge Automático') {
+            steps {
+                script {
+                    sh '''
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@local.domain"
+                        
+                        git checkout main
+                        git pull origin main
+                        git merge ${env.BRANCH_NAME} --no-ff -m "Merge automático exitoso desde ${env.BRANCH_NAME} [Jenkins]"
+                        git push origin main
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo '¡El backend de fotoestudio se ha desplegado con éxito en Minikube!'
+            echo '¡El proyecto fotoestudio se ha analizado, desplegado y fusionado con éxito!'
         }
         failure {
             echo 'Hubo un error en el pipeline. Revisa la consola.'
