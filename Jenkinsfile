@@ -26,7 +26,7 @@ pipeline {
                 script {
                     dir('fotoestudio') {
                         withSonarQubeEnv('SonarqubeLocal') { 
-                            withCredentials([string(credentialsId: 'sonarqubes_jenkins', variable: 'SONAR_TOKEN')]) {
+                            withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
                                 // comando nativo 
                                 sh '''
                                     sonar-scanner \
