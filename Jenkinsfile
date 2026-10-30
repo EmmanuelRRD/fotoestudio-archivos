@@ -21,21 +21,25 @@ pipeline {
             }
         }
 
-        stage('3. Análisis con SonarQube') {
+stage('3. Análisis con SonarQube') {
             steps {
                 script {
                     dir('fotoestudio') {
                         withSonarQubeEnv('SonarqubeLocal') { 
                             withCredentials([string(credentialsId: 'sonarqubes_jenkins', variable: 'SONAR_TOKEN')]) {
                                 sh '''
-                                    docker run --rm \
-                                      -v "$(pwd)":/usr/src \
-                                      -e SONAR_HOST_URL="http://172.17.0.1:9000" \
-                                      -e SONAR_TOKEN="${SONAR_TOKEN}" \
-                                      sonarsource/sonar-scanner-cli \
+                                    # Descargamos el scanner de forma temporal y directa si no está presente
+                                    if [ ! -d "./sonar-scanner-cli" ]; then
+                                        curl -sSLo ./sonar-scanner-cli.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+                                        unzip -q ./sonar-scanner-cli.zip
+                                        mv sonar-scanner-*-linux sonar-scanner
+                                    fi
+                                    
+                                    # Ejecutamos el escáner nativamente en el workspace (creando el report-task.txt perfecto)
+                                    ./sonar-scanner/bin/sonar-scanner \
                                       -Dsonar.projectKey=fotoestudio-backend \
                                       -Dsonar.sources=. \
-                                      -Dsonar.scanner.skipReportFile=false
+                                      -Dsonar.login=${SONAR_TOKEN}
                                 '''
                             }
                         }
