@@ -27,10 +27,10 @@ pipeline {
                     dir('fotoestudio') {
                         sh '''
                             sonar-scanner \
-                              -Dsonar.projectKey=fotoestudio-backend \
-                              -Dsonar.sources=. \
-                              -Dsonar.host.url=http://localhost:9000 \
-                              -Dsonar.login=TU_TOKEN_O_CREDENCIAL
+                            -Dsonar.projectKey=fotoestudio-backend \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=http://localhost:9000 \
+                            -Dsonar.login=squ_8fdbe6d049408f784322eef2a5f6e7c664f5c166
                         '''
                     }
                 }
