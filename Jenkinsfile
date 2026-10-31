@@ -93,7 +93,7 @@ stage('3. Análisis con SonarQube') {
                         
                         git checkout prueba
                         git pull origin prueba
-                        git merge ${env.BRANCH_NAME} --no-ff -m "Merge automático exitoso desde ${env.BRANCH_NAME} [Jenkins]"
+                        git merge main --no-ff -m "Merge automático exitoso desde main [Jenkins]"
                         git push origin prueba
                     '''
                 }
