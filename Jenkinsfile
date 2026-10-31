@@ -105,7 +105,7 @@ pipeline {
 
                     withCredentials([
                         string(
-                            credentialsId: 'GIT_TOKEN',
+                            credentialsId: 'Github_Jenkins',
                             variable: 'GIT_TOKEN'
                         )
                     ]) {
