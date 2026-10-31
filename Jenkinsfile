@@ -103,36 +103,34 @@ stage('3. Análisis con SonarQube') {
                     passwordVariable: 'GIT_TOKEN'
                 )
             ]) {
-                withEnv(["SOURCE_BRANCH=${sourceBranch}"]) {
-                    sh '''
-                        set -eu
+                withCredentials([
+    string(
+        credentialsId: 'Github_Jenkins',
+        variable: 'GIT_TOKEN'
+    )
+]) {
+    sh '''
+        set -eu
 
-                        git config user.name "Jenkins CI"
-                        git config user.email "jenkins@local.domain"
+        git config user.name "Jenkins CI"
+        git config user.email "jenkins@local.domain"
 
-                        echo "Obteniendo ramas remotas..."
+        git fetch origin main
+        git fetch origin "$SOURCE_BRANCH"
 
-                        git fetch origin main
-                        git fetch origin "$SOURCE_BRANCH"
+        git checkout -B main origin/main
 
-                        echo "Cambiando a main..."
+        git merge --no-ff "origin/$SOURCE_BRANCH" \
+          -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
 
-                        git checkout -B main origin/main
+        AUTH=$(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 | tr -d '\\n')
 
-                        echo "Fusionando $SOURCE_BRANCH en main..."
+        git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
+          push origin main
 
-                        git merge --no-ff "origin/$SOURCE_BRANCH" \
-                          -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
-
-                        echo "Publicando cambios en GitHub..."
-
-                        AUTH=$(printf '%s' "$GIT_USERNAME:$GIT_TOKEN" | base64 | tr -d '\\n')
-
-                        git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
-                          push origin main
-
-                        echo "Merge automático completado."
-                    '''
+        echo "Merge automático completado."
+    '''
+}
                 }
             }
         }
