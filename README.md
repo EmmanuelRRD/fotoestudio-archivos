@@ -1,5 +1,2 @@
 # fotoestudio-archivos
-# fotoestudio-archivos
-# fotoestudio-archivos
-# fotoestudio-archivos
-# fotoestudio-archivos
+Texto de prueba - bambios con branch de pruebas

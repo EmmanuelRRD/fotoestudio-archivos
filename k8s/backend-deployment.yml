@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: backend
-        image: fotoestudio-backend:v1
+        image: fotoestudio-backend:latest
+        imagePullPolicy: IfNotPresent
         env:
             - name: DB_HOST
               value: "db"
