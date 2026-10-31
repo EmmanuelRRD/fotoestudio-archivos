@@ -84,53 +84,61 @@ stage('3. Análisis con SonarQube') {
             }
         }
 
-        stage('6. Merge Automático') {
-    when {
-        expression {
-            env.BRANCH_NAME &&
-            env.BRANCH_NAME != 'main'
-        }
-    }
-
+        
+stage('6. Merge Automático') {
     steps {
         script {
-            def sourceBranch = env.BRANCH_NAME
+            def sourceBranch = 'prueba'
 
             withCredentials([
-                usernamePassword(
-                    credentialsId: 'github-https',
-                    usernameVariable: 'GIT_USERNAME',
-                    passwordVariable: 'GIT_TOKEN'
+                string(
+                    credentialsId: 'github-token',
+                    variable: 'GIT_TOKEN'
                 )
             ]) {
-                withCredentials([
-    string(
-        credentialsId: 'Github_Jenkins',
-        variable: 'GIT_TOKEN'
-    )
-]) {
-    sh '''
-        set -eu
+                withEnv(["SOURCE_BRANCH=${sourceBranch}"]) {
+                    sh '''
+                        set -eu
 
-        git config user.name "Jenkins CI"
-        git config user.email "jenkins@local.domain"
+                        echo "Configurando usuario de Git..."
+                        git config user.name "Jenkins CI"
+                        git config user.email "jenkins@local.domain"
 
-        git fetch origin main
-        git fetch origin "$SOURCE_BRANCH"
+                        echo "Actualizando referencias remotas..."
+                        git fetch origin main
+                        git fetch origin "$SOURCE_BRANCH"
 
-        git checkout -B main origin/main
+                        echo "Preparando rama principal..."
+                        git checkout -B main origin/main
 
-        git merge --no-ff "origin/$SOURCE_BRANCH" \
-          -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
+                        echo "Integrando $SOURCE_BRANCH en main..."
 
-        AUTH=$(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 | tr -d '\\n')
+                        git merge --no-ff "origin/$SOURCE_BRANCH" \
+                            -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
 
-        git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
-          push origin main
+                        echo "Preparando autenticación con GitHub..."
 
-        echo "Merge automático completado."
-    '''
-}
+                        export GIT_ASKPASS="$(pwd)/.git-askpass"
+                        export GIT_TERMINAL_PROMPT=0
+
+                        cat > "$GIT_ASKPASS" <<'EOF'
+#!/bin/sh
+case "$1" in
+    *Username*) echo "x-access-token" ;;
+    *Password*) echo "$GIT_TOKEN" ;;
+    *) exit 1 ;;
+esac
+EOF
+
+                        chmod 700 "$GIT_ASKPASS"
+
+                        trap 'rm -f "$GIT_ASKPASS"' EXIT
+
+                        echo "Enviando cambios a GitHub..."
+                        git push origin main
+
+                        echo "Merge automático completado correctamente."
+                    '''
                 }
             }
         }
