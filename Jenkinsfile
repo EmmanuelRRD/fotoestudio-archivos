@@ -85,21 +85,59 @@ stage('3. Análisis con SonarQube') {
         }
 
         stage('6. Merge Automático') {
-            steps {
-                script {
+    when {
+        expression {
+            env.BRANCH_NAME &&
+            env.BRANCH_NAME != 'main'
+        }
+    }
+
+    steps {
+        script {
+            def sourceBranch = env.BRANCH_NAME
+
+            withCredentials([
+                usernamePassword(
+                    credentialsId: 'github-https',
+                    usernameVariable: 'GIT_USERNAME',
+                    passwordVariable: 'GIT_TOKEN'
+                )
+            ]) {
+                withEnv(["SOURCE_BRANCH=${sourceBranch}"]) {
                     sh '''
+                        set -eu
+
                         git config user.name "Jenkins CI"
                         git config user.email "jenkins@local.domain"
-                        
-                        git checkout prueba
-                        git pull origin prueba
-                        git merge main --no-ff -m "Merge automático exitoso desde main [Jenkins]"
-                        git push origin prueba
+
+                        echo "Obteniendo ramas remotas..."
+
+                        git fetch origin main
+                        git fetch origin "$SOURCE_BRANCH"
+
+                        echo "Cambiando a main..."
+
+                        git checkout -B main origin/main
+
+                        echo "Fusionando $SOURCE_BRANCH en main..."
+
+                        git merge --no-ff "origin/$SOURCE_BRANCH" \
+                          -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
+
+                        echo "Publicando cambios en GitHub..."
+
+                        AUTH=$(printf '%s' "$GIT_USERNAME:$GIT_TOKEN" | base64 | tr -d '\\n')
+
+                        git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
+                          push origin main
+
+                        echo "Merge automático completado."
                     '''
                 }
             }
         }
     }
+}
 
     post {
         success {
