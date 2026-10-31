@@ -91,10 +91,10 @@ stage('3. Análisis con SonarQube') {
                         git config user.name "Jenkins CI"
                         git config user.email "jenkins@local.domain"
                         
-                        git checkout main
-                        git pull origin main
+                        git checkout prueba
+                        git pull origin prueba
                         git merge ${env.BRANCH_NAME} --no-ff -m "Merge automático exitoso desde ${env.BRANCH_NAME} [Jenkins]"
-                        git push origin main
+                        git push origin prueba
                     '''
                 }
             }
