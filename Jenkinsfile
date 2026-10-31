@@ -1,4 +1,42 @@
 
+/*
+ * Función auxiliar para enviar notificaciones a Slack.
+ * Si Slack falla, no interrumpe el pipeline.
+ */
+def enviarSlack(String color, String mensaje) {
+    try {
+        slackSend(
+            channel: '#agente1',
+            color: color,
+            message: mensaje
+        )
+    } catch (Exception e) {
+        echo "No se pudo enviar la notificación a Slack: ${e.message}"
+    }
+}
+
+/*
+ * Notificación de resultados individuales.
+ */
+def notificarEtapa(String etapa, String estado) {
+    def color = estado == 'SUCCESS' ? 'good' : 'danger'
+    def emoji = estado == 'SUCCESS' ? ':white_check_mark:' : ':x:'
+
+    enviarSlack(
+        color,
+        """
+${emoji} *FOTOESTUDIO - ${estado}*
+
+*Etapa:* ${etapa}
+*Build:* #${env.BUILD_NUMBER}
+*Proyecto:* ${env.JOB_NAME}
+
+<${env.BUILD_URL}|Ver ejecución en Jenkins>
+"""
+    )
+}
+
+
 pipeline {
     agent any
 
@@ -7,9 +45,38 @@ pipeline {
         // 1. Obtener código fuente
         stage('1. Verificar Código') {
             steps {
+                script {
+                    enviarSlack(
+                        '#439FE0',
+                        """
+:rocket: *FOTOESTUDIO - PIPELINE INICIADO*
+
+*Proyecto:* ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Estado:* INICIANDO
+
+<${env.BUILD_URL}|Ver ejecución en Jenkins>
+"""
+                    )
+                }
+
                 checkout scm
             }
+
+            post {
+                success {
+                    script {
+                        notificarEtapa('Verificar Código', 'SUCCESS')
+                    }
+                }
+                failure {
+                    script {
+                        notificarEtapa('Verificar Código', 'FAILURE')
+                    }
+                }
+            }
         }
+
 
         // 2. Construir imágenes y cargarlas en Minikube
         stage('2. Construir e Cargar en Minikube') {
@@ -26,7 +93,21 @@ pipeline {
                     '''
                 }
             }
+
+            post {
+                success {
+                    script {
+                        notificarEtapa('Construcción y carga de imágenes', 'SUCCESS')
+                    }
+                }
+                failure {
+                    script {
+                        notificarEtapa('Construcción y carga de imágenes', 'FAILURE')
+                    }
+                }
+            }
         }
+
 
         // 3. Análisis estático con SonarQube
         stage('3. Análisis con SonarQube') {
@@ -64,7 +145,21 @@ pipeline {
                     }
                 }
             }
+
+            post {
+                success {
+                    script {
+                        notificarEtapa('Análisis estático SonarQube', 'SUCCESS')
+                    }
+                }
+                failure {
+                    script {
+                        notificarEtapa('Análisis estático SonarQube', 'FAILURE')
+                    }
+                }
+            }
         }
+
 
         // 4. Esperar y validar Quality Gate
         stage('4. Quality Gate de SonarQube') {
@@ -81,7 +176,46 @@ pipeline {
                     }
                 }
             }
+
+            post {
+                success {
+                    script {
+                        enviarSlack(
+                            'good',
+                            """
+:shield: *SONARQUBE - QUALITY GATE SUPERADO*
+
+*Proyecto:* Fotoestudio
+*Estado:* PASSED
+*Build:* #${env.BUILD_NUMBER}
+
+<${env.BUILD_URL}|Ver ejecución en Jenkins>
+"""
+                        )
+                    }
+                }
+
+                failure {
+                    script {
+                        enviarSlack(
+                            'danger',
+                            """
+:warning: *SONARQUBE - QUALITY GATE RECHAZADO O FALLIDO*
+
+*Proyecto:* Fotoestudio
+*Estado:* FAILED
+*Build:* #${env.BUILD_NUMBER}
+
+Revisa los resultados del análisis en SonarQube.
+
+<${env.BUILD_URL}|Ver ejecución en Jenkins>
+"""
+                        )
+                    }
+                }
+            }
         }
+
 
         // 5. Desplegar en Kubernetes
         stage('5. Desplegar en Kubernetes') {
@@ -95,7 +229,21 @@ pipeline {
                     '''
                 }
             }
+
+            post {
+                success {
+                    script {
+                        notificarEtapa('Despliegue en Kubernetes', 'SUCCESS')
+                    }
+                }
+                failure {
+                    script {
+                        notificarEtapa('Despliegue en Kubernetes', 'FAILURE')
+                    }
+                }
+            }
         }
+
 
         // 6. Integrar prueba en main
         stage('6. Merge Automático') {
@@ -156,17 +304,56 @@ EOF
                     }
                 }
             }
+
+            post {
+                success {
+                    script {
+                        notificarEtapa('Merge automático en main', 'SUCCESS')
+                    }
+                }
+                failure {
+                    script {
+                        notificarEtapa('Merge automático en main', 'FAILURE')
+                    }
+                }
+            }
         }
     }
 
+
     // Acciones posteriores al pipeline
     post {
-        success {
-            echo '¡Pipeline completado correctamente! Revisa el resultado del merge en main.'
-        }
 
-        failure {
-            echo 'Hubo un error en el pipeline. Revisa la consola.'
+        always {
+            script {
+                def resultado = currentBuild.currentResult ?: 'UNKNOWN'
+
+                def color = resultado == 'SUCCESS' ? 'good' :
+                            resultado == 'UNSTABLE' ? 'warning' :
+                            resultado == 'ABORTED' ? '#808080' : 'danger'
+
+                def emoji = resultado == 'SUCCESS' ? ':tada:' :
+                            resultado == 'UNSTABLE' ? ':warning:' :
+                            resultado == 'ABORTED' ? ':no_entry_sign:' : ':x:'
+
+                enviarSlack(
+                    color,
+                    """
+${emoji} *FOTOESTUDIO - RESULTADO FINAL DEL PIPELINE*
+
+*Proyecto:* ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*Resultado:* ${resultado}
+*Duración:* ${currentBuild.durationString}
+
+*Etapas:* 6
+*Destino:* Kubernetes / Minikube
+*Integración Git:* main
+
+<${env.BUILD_URL}|Ver detalles completos en Jenkins>
+"""
+                )
+            }
         }
     }
 }
