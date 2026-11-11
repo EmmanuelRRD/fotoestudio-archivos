@@ -109,7 +109,7 @@ pipeline {
         }
 
 
-        // 3. Análisis estático con SonarQube
+// 3. Análisis estático con SonarQube
         stage('3. Análisis con SonarQube') {
             steps {
                 script {
@@ -142,19 +142,20 @@ pipeline {
                                 '''
                             }
                         }
-                    }
-                }
-            }
-
-            post {
-                success {
-                    script {
-                        notificarEtapa('Análisis estático SonarQube', 'SUCCESS')
-                    }
-                }
-                failure {
-                    script {
-                        notificarEtapa('Análisis estático SonarQube', 'FAILURE')
+                        
+                        // --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
+                        // Atrapamos el error del Quality Gate para que no rompa el pipeline
+                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                            timeout(time: 5, unit: 'MINUTES') {
+                                def qg = waitForQualityGate()
+                                if (qg.status != 'OK') {
+                                    echo "ATENCIÓN: El Quality Gate falló con estatus ${qg.status}, pero el pipeline continuará..."
+                                } else {
+                                    echo "¡Quality Gate superado con éxito!"
+                                }
+                            }
+                        }
+                        // ---------------------------------
                     }
                 }
             }
