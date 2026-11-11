@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,9 +13,12 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: fotoestudio-backend:v1
-        env:
+        - name: backend
+          image: fotoestudio-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
             - name: DB_HOST
               value: "db"
             - name: DB_NAME
@@ -29,12 +31,15 @@ spec:
               value: "3306"
             - name: CORS_ALLOWED_ORIGINS
               value: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:30008"
-        imagePullPolicy: Never 
-        ports:
-        - containerPort: 8000
-        envFrom:
-        - configMapRef:
-            name: backend-config
+            - name: TEST_CHARSET
+              value: "utf8mb4"
+            - name: TEST_COLLATION
+              value: "utf8mb4_unicode_ci"
+            - name: TEST_NAME
+              value: "fotoestudio"
+          envFrom:
+            - configMapRef:
+                name: backend-config
 ---
 apiVersion: v1
 kind: Service
@@ -43,60 +48,8 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 8000
-    targetPort: 8000
-    nodePort: 30008
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30008
   selector:
     app: backend
-=======
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: backend
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      labels:
-        app: backend
-    spec:
-      containers:
-      - name: backend
-        image: fotoestudio-backend:latest
-        imagePullPolicy: IfNotPresent
-        env:
-            - name: DB_HOST
-              value: "db"
-            - name: DB_NAME
-              value: "fotoestudio"
-            - name: DB_USER
-              value: "root"
-            - name: DB_PASSWORD
-              value: "fotoestudio"
-            - name: DB_PORT
-              value: "3306"
-            - name: CORS_ALLOWED_ORIGINS
-              value: "http://localhost:5173,http://127.0.0.1:5173,http://localhost:30008"
-        imagePullPolicy: Never 
-        ports:
-        - containerPort: 8000
-        envFrom:
-        - configMapRef:
-            name: backend-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-spec:
-  type: NodePort
-  ports:
-  - port: 8000
-    targetPort: 8000
-    nodePort: 30008
-  selector:
-    app: backend
->>>>>>> eb5779a8d6469c328026fe586d8a39ddbaff9469
