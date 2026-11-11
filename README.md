@@ -1,4 +1,2 @@
 # fotoestudio-archivos
 
-autohook
-otro
