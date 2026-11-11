@@ -213,7 +213,7 @@ pipeline {
         }
 
 
-       // 5. Integrar prueba en main
+        // 5. Integrar prueba en main
         stage('5. Merge Automático') {
             steps {
                 script {
@@ -251,7 +251,7 @@ pipeline {
                                 export GIT_TERMINAL_PROMPT=0
 
                                 # Script askpass corregido y limpio
-                                printf '#!/bin/sh\\ncase "$1" in\\n*Username*) echo "x-access-token" ;;\\n*Password*) echo "%s" ;;\\n*) exit 1 ;;\\nes\\n' "$GIT_TOKEN" > "$GIT_ASKPASS"
+                                printf '#!/bin/sh\\ncase "$1" in\\n*Username*) echo "x-access-token" ;;\\n*Password*) echo "%s" ;;\\n*) exit 1 ;;\\nesac\\n' "$GIT_TOKEN" > "$GIT_ASKPASS"
 
                                 chmod 700 "$GIT_ASKPASS"
 
@@ -280,11 +280,11 @@ pipeline {
                 }
             }
         }
+    } // <-- ¡FALTABA ESTA LLAVE PARA CERRAR EL BLOQUE 'stages'!
 
 
     // Acciones posteriores al pipeline
     post {
-
         always {
             script {
                 def resultado = currentBuild.currentResult ?: 'UNKNOWN'
