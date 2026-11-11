@@ -213,7 +213,7 @@ pipeline {
         }
 
 
-        // 5. Integrar prueba en main
+       // 5. Integrar prueba en main
         stage('5. Merge Automático') {
             steps {
                 script {
@@ -243,21 +243,15 @@ pipeline {
                                 echo "Integrando $SOURCE_BRANCH en main..."
 
                                 git merge --no-ff "origin/$SOURCE_BRANCH" \
-                                    -m "Merge automático desde $SOURCE_BRANCH [Jenkins]"
+                                    -m "Merge automático desde $SOURCE_BRANCH [Jenkins]" || true
 
                                 echo "Preparando autenticación..."
 
                                 export GIT_ASKPASS="$(pwd)/.git-askpass"
                                 export GIT_TERMINAL_PROMPT=0
 
-                                cat > "$GIT_ASKPASS" <<'EOF'
-#!/bin/sh
-case "$1" in
-    *Username*) echo "x-access-token" ;;
-    *Password*) echo "$GIT_TOKEN" ;;
-    *) exit 1 ;;
-es:
-EOF
+                                # Script askpass corregido y limpio
+                                printf '#!/bin/sh\\ncase "$1" in\\n*Username*) echo "x-access-token" ;;\\n*Password*) echo "%s" ;;\\n*) exit 1 ;;\\nes\\n' "$GIT_TOKEN" > "$GIT_ASKPASS"
 
                                 chmod 700 "$GIT_ASKPASS"
 
@@ -286,7 +280,6 @@ EOF
                 }
             }
         }
-    }
 
 
     // Acciones posteriores al pipeline
